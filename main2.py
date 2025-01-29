@@ -22,6 +22,18 @@ renal_function = st.sidebar.number_input("Renal Function (%)", min_value=0.0, ma
 systolic = st.sidebar.number_input("Systolic (mmHg)", min_value=90, max_value=180, value=120, step=1)
 diastolic = st.sidebar.number_input("Diastolic (mmHg)", min_value=60, max_value=120, value=80, step=1)
 
+# Normal ranges
+thresholds = {
+    "Age": 120,
+    "BMI": 25,
+    "Blood Sugar": 140,
+    "Cholesterol": 200,
+    "CRP": 3,
+    "Renal Function": 80,
+    "Systolic": 120,
+    "Diastolic": 80
+}
+
 # Submit button
 if st.sidebar.button("Predict Risk"):
     # Prepare the input for prediction
@@ -32,28 +44,56 @@ if st.sidebar.button("Predict Risk"):
     # Display prediction result
     st.header(f"Prediction: {risk_status}")
 
-    # Display personalized insights
-    if risk_status == "At Risk":
-        st.subheader("⚠️ Personalized Recommendations:")
-        st.write("- Maintain a healthy diet and exercise regularly.")
-        st.write("- Reduce intake of high-cholesterol and high-sugar foods.")
-        st.write("- Monitor blood pressure and consult a doctor regularly.")
+    # Identify specific risk factors
+    risk_factors = []
+
+    if bmi > thresholds["BMI"]:
+        risk_factors.append("BMI is above the healthy range. Consider a balanced diet and regular exercise.")
+
+    if blood_sugar > thresholds["Blood Sugar"]:
+        risk_factors.append("Blood sugar is high. Reduce sugar intake and monitor glucose levels.")
+
+    if cholesterol > thresholds["Cholesterol"]:
+        risk_factors.append("Cholesterol level is high. Eat fiber-rich foods and reduce saturated fats.")
+
+    if crp > thresholds["CRP"]:
+        risk_factors.append("CRP is elevated, indicating inflammation. Consider an anti-inflammatory diet.")
+
+    if renal_function < thresholds["Renal Function"]:
+        risk_factors.append("Renal function is low. Stay hydrated and monitor kidney health.")
+
+    if systolic > thresholds["Systolic"] or diastolic > thresholds["Diastolic"]:
+        risk_factors.append("Blood pressure is high. Reduce salt intake and practice stress management.")
+
+    # Display personalized recommendations
+    st.subheader("📌 Personalized Recommendations:")
+
+    if risk_factors:
+        for recommendation in risk_factors:
+            st.write(f"- {recommendation}")
     else:
-        st.subheader("✅ Great Job!")
-        st.write("Keep up the healthy lifestyle!")
+        st.write("✅ All your health metrics are within normal range. Keep up the good work!")
+
 
     # Visualize input data
     st.subheader("Input Data Visualization")
     fig, ax = plt.subplots()
-    categories = ['Age', 'BMI', 'Blood Sugar', 'Cholesterol', 'CRP', 'Renal Function', 'Systolic', 'Diastolic']
+    categories = list(thresholds.keys())
     values = [age, bmi, blood_sugar, cholesterol, crp, renal_function, systolic, diastolic]
     
-    # Modify bar colors based on values
-    colors = ['red' if value > threshold else 'skyblue' for value, threshold in zip(values, [120, 25, 140, 200, 3, 80, 120, 80])]
-    ax.bar(categories, values, color=colors)
-    
-    ax.set_ylabel('Values')
-    ax.set_title('Health Metrics')
+    # Splitting normal and exceeding parts
+    normal_values = [min(value, thresholds[cat]) for value, cat in zip(values, categories)]
+    exceeding_values = [max(value - thresholds[cat], 0) for value, cat in zip(values, categories)]
+
+    # Normal bars
+    ax.bar(categories, normal_values, color="skyblue", label="Normal Range")
+
+    # Exceeding stacked bars
+    ax.bar(categories, exceeding_values, bottom=normal_values, color="red", label="Above Normal")
+
+    ax.set_ylabel("Values")
+    ax.set_title("Health Metrics")
+    ax.legend()
 
     # Rotate x-axis labels
     plt.xticks(rotation=90)
